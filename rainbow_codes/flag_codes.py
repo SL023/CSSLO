@@ -11,7 +11,6 @@ import concurrent.futures
 ## Standard Flag Code Types
 #####################################
 
-
 def Complex_to_Code_MSG(C,SG=False,CP=False):
     '''SX and SZ are MSG'''
     IdC = None
@@ -57,7 +56,7 @@ def Complex_to_PinCode(C,SG=False,CP=False):
     Sxmc += [('z','m',c) for c in zCycles]
     return flag_code(C,Sxmc,SG=SG,IdC=IdC,CP=CP)
 
-def Complex_to_24_Cell(C,SG=False,CP=False):
+def Edge_Contraction_03(C,SG=False,CP=False):
     '''SX and SZ are MSG; edge contraction to reduce qubit numbers - 24 cells for repetition codes'''
     IdC = [0,3]
     xCycles = [(0,1,2),(1,2,3)]
@@ -66,15 +65,46 @@ def Complex_to_24_Cell(C,SG=False,CP=False):
     Sxmc += [('z','m',c) for c in zCycles]
     return flag_code(C,Sxmc,SG=SG,IdC=IdC,CP=CP)
 
-def Complex_to_8_24_48_Cell(C,SG=False,CP=False):
+def Edge_Contraction_3(C,SG=False,CP=False):
     '''SX and SZ are MSG; edge contraction to reduce qubit numbers'''
     IdC = [3]
     xCycles = [(0,1,2),(0,2,3),(1,2,3)]
-    Sxmc = [('x','m',c) for c in xCycles]
     zCycles = [(0,1),(0,2),(1,2),(0,1,3),(2,3)]
+    Sxmc = [('x','m',c) for c in xCycles]
     Sxmc += [('z','m',c) for c in zCycles]
     return flag_code(C,Sxmc,SG=SG,IdC=IdC,CP=CP)
 
+def Edge_Contraction_0(C,SG=False,CP=False):
+    '''SX and SZ are MSG; edge contraction to reduce qubit numbers'''
+    IdC = [0]
+    xCycles = [(0,1,2),(0,1,3),(1,2,3)]
+    zCycles = [(0,1),(1,2),(1,3),(2,3),(0,2,3)]
+    Sxmc = [('x','m',c) for c in xCycles]
+    Sxmc += [('z','m',c) for c in zCycles]
+    return flag_code(C,Sxmc,SG=SG,IdC=IdC,CP=CP)
+
+def Cx2CodeTest(C,SG=False,CP=False):
+    '''SX and SZ are MSG; edge contraction to reduce qubit numbers'''
+    d = len(C)
+
+    ## 0 contraction
+    IdC = [0]
+    xCycles = [(0,1,2),(0,1,3),(1,2,3)]
+    zCycles = [(0,1),(1,2),(1,3),(2,3),(0,2,3)]
+
+    ## 3 contraction
+    IdC = [3]
+    xCycles = [(0,1,2),(0,2,3),(1,2,3)]
+    zCycles = [(0,1),(0,2),(1,2),(0,1,3),(2,3)]
+
+    ## no contraction
+    xCycles = iter.combinations(range(d+1),d)
+    zCycles = iter.combinations(range(d+1),2)
+
+    RIncl = {0,d}
+    Sxmc = [('x','m' if RIncl.issubset(c) else 'r',c) for c in xCycles]
+    Sxmc += [('z','m' if RIncl.issubset(c) else 'r',c) for c in zCycles]
+    return flag_code(C,Sxmc,SG=SG,IdC=IdC,CP=CP)
 
 #####################################
 ## Generate Flag Codes
@@ -229,11 +259,15 @@ def flagSXLXLZ(SZ,SX,FG,subGraphs,SXtodo,IdM):
         for i in range(k):
             LX[i,ixk[i]] = 1
     ## Calculate LX: of form (0|A.T|I) with cols in order (ixs|ixr|ixk)
+    # print(f'[[{n},{k}]]')
     LZ = ZMatZeros((k,n))
     A = HX[:,ixk]
     LZ[:,ixr] = A.T 
     for i in range(k):
         LZ[i,ixk[i]] = 1    
+    if len(LZ) > 0:
+        dZ = np.min(np.sum(LZ,axis=-1))
+        # print(f'dz: {dZ}')
     ## return updated SX and LX/LZ
     return SX,LX,LZ
 
@@ -408,8 +442,9 @@ def RSGKer(FG,colours,SGList,L,IdM):
     for M in MList:
         M = bin2Set(M)
         ## move flags in M to the RHS
-        ix = np.hstack([invRange(n,M), inRange(n,M)])
-        ixR = ixRev(ix)
+        ix = ZMat(invRange(n,M) + inRange(n,M))
+        # print(func_name(),ix)
+        ixR = ixRev(ZMat(ix))
         A = L[:,ix]
         ## RREF
         A,LI = getH(A,2,retPivots=True)
@@ -936,7 +971,7 @@ def analyseFlagCode(C,constrFun=Complex_to_PinCode,SG=False,coloured_logical_pau
                 if w < dZ and np.sum(matMul(z,LX.T,2)) > 0:
                     dZ = w
         temp.append(f'dZ {dZ}')
-        gamma = codeGamma(n,k,dZ)
+        gamma = codeGamma(n,k,min(dX,dZ))
         temp.append(f'gamma {gamma}')
     else:
         temp.append('No encoded qubits')
