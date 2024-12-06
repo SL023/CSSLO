@@ -1303,7 +1303,7 @@ def tValentProduct(SX,t):
     temp = set()
     r, n = np.shape(SX)
     for s in iter.combinations(range(r),t):
-        x = np.product(SX[list(s)],axis=0)
+        x = np.prod(SX[list(s)],axis=0)
         if np.sum(x) > 0:
             temp.add(tuple(x))
     return ZMat(temp)
