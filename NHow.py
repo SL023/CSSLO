@@ -446,7 +446,7 @@ def pListDefault(tB=1,pI=0.7):
 def ZMatProb(A,pList,nA=0,tB=1,nC=-1,N=2):
     pList = np.array(pList)
     W = ZMatBlockSum(A,nA=nA,tB=tB,nC=nC,N=N)
-    return np.product(pList[W],axis=-1)
+    return np.prod(pList[W],axis=-1)
 
 def lowWeightGens(L,S=None,N=2,tB=1,pList=None,retProb=False):
     '''Get set of lowest weight generators of logicals L
